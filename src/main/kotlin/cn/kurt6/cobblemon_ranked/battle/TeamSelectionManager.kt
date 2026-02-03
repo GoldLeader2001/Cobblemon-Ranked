@@ -131,6 +131,18 @@ object TeamSelectionManager {
 
             val opponent = if (session.player1.uuid == player.uuid) session.player2 else session.player1
 
+            BattleHandler.restorePlayerPokemonLevels(player)
+            BattleHandler.restorePlayerPokemonLevels(opponent)
+
+            if (session.formatName == "2v2singles") {
+                val arena1 = BattleHandler.playerToArena.remove(player.uuid)
+                val arena2 = BattleHandler.playerToArena.remove(opponent.uuid)
+                val arena = arena1 ?: arena2
+                if (arena != null) {
+                    BattleHandler.releaseArena(arena)
+                }
+            }
+
             if (opponent.isDisconnected) {
                 BattleHandler.releaseArenaForPlayer(player.uuid)
                 BattleHandler.releaseArenaForPlayer(opponent.uuid)
@@ -333,21 +345,23 @@ object TeamSelectionManager {
 
     private fun getBattlePokemon(player: ServerPlayerEntity, uuid: UUID): BattlePokemon? {
         val party = Cobblemon.storage.getParty(player)
-        val original = party.find { it.uuid == uuid } ?: return null
-
+        val pokemon = party.find { it.uuid == uuid } ?: return null
         val config = CobblemonRanked.config
-        val battleEntity = if (config.enableCustomLevel) {
-            try {
-                val clone = original.clone()
-                clone.level = config.customBattleLevel
-                clone.heal()
-                clone
-            } catch (e: Exception) {
-                original
-            }
+
+        return if (config.enableCustomLevel) {
+            val originalLevel = pokemon.level
+            BattleHandler.savePokemonLevel(pokemon.uuid, originalLevel)
+            pokemon.level = config.customBattleLevel
+            pokemon.heal()
+            BattlePokemon(
+                originalPokemon = pokemon,
+                effectedPokemon = pokemon,
+                postBattleEntityOperation = { entity ->
+                    BattleHandler.restorePokemonLevel(pokemon.uuid, pokemon)
+                }
+            )
         } else {
-            original
+            BattlePokemon(originalPokemon = pokemon)
         }
-        return BattlePokemon(battleEntity)
     }
 }

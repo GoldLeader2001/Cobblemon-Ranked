@@ -93,6 +93,11 @@ class MatchmakingQueue {
             RankUtils.sendMessage(player, MessageConfig.get("queue.mod_required", lang))
             return
         }
+        if (config.enableTeamPreview && !cn.kurt6.cobblemon_ranked.util.ClientVersionTracker.isPlayerCompatible(player.uuid)) {
+            RankUtils.sendMessage(player, MessageConfig.get("queue.version_outdated", lang))
+            return
+        }
+
 
         if (!canPlayerJoinQueue(player)) {
             RankUtils.sendMessage(player, MessageConfig.get("queue.cannot_join", lang))

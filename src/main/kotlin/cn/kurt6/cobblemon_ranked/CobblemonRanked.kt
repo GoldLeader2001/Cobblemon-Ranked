@@ -54,18 +54,27 @@ class CobblemonRanked : ModInitializer {
 
         ServerPlayConnectionEvents.JOIN.register { handler, sender, server ->
             val player = handler.player
-            BattleHandler.restoreLevelsFromDatabase(player)
+            server.execute {
+                BattleHandler.teleportBackIfPossible(player)
+                BattleHandler.restorePlayerPokemonLevels(player)
+            }
             CrossServerSocket.handlePlayerJoin(handler.player)
         }
 
         ServerPlayConnectionEvents.DISCONNECT.register { handler, server ->
             cn.kurt6.cobblemon_ranked.battle.TeamSelectionManager.handleDisconnect(handler.player)
+            cn.kurt6.cobblemon_ranked.util.ClientVersionTracker.removePlayer(handler.player.uuid)
             CrossServerSocket.handlePlayerDisconnect(handler.player)
         }
 
         PayloadTypeRegistry.playC2S().register(
             RequestPlayerRankPayload.ID,
             RequestPlayerRankPayload.CODEC
+        )
+
+        PayloadTypeRegistry.playC2S().register(
+            ClientVersionPayload.ID,
+            ClientVersionPayload.CODEC
         )
 
         PayloadTypeRegistry.playS2C().register(
@@ -99,6 +108,10 @@ class CobblemonRanked : ModInitializer {
             cn.kurt6.cobblemon_ranked.battle.TeamSelectionManager.handleSubmission(context.player(), payload.selectedUuids)
         }
 
+        ServerPlayNetworking.registerGlobalReceiver(ClientVersionPayload.ID) { payload, context ->
+            cn.kurt6.cobblemon_ranked.util.ClientVersionTracker.setPlayerVersion(context.player().uuid, payload.version)
+        }
+
         ServerPlayNetworking.registerGlobalReceiver(RequestPlayerRankPayload.ID) { payload, context ->
             ServerNetworking.handle(payload, context)
         }
@@ -115,17 +128,22 @@ class CobblemonRanked : ModInitializer {
 
     private fun registerEvents() {
         BattleHandler.register()
-        DuoBattleManager.register()
 
         ServerLifecycleEvents.SERVER_STOPPING.register {
-            matchmakingQueue.clear()
             matchmakingQueue.shutdown()
             DuoMatchmakingQueue.shutdown()
-            DuoBattleManager.clearAll()
-            BattleHandler.shutdown()
-            cn.kurt6.cobblemon_ranked.battle.TeamSelectionManager.shutdown()
-            rankDao.close()
+            matchmakingQueue.clear()
             CrossServerSocket.disconnect()
+        }
+
+        ServerLifecycleEvents.SERVER_STOPPED.register {
+            try {
+                DuoBattleManager.clearAll()
+                cn.kurt6.cobblemon_ranked.battle.TeamSelectionManager.shutdown()
+                rankDao.close()
+            } catch (e: Exception) {
+                logger.warn("Error during final cleanup", e)
+            }
         }
     }
 

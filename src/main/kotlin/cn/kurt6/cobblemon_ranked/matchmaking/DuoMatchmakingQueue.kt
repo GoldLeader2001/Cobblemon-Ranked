@@ -59,6 +59,11 @@ object DuoMatchmakingQueue {
             RankUtils.sendMessage(player, MessageConfig.get("queue.mod_required", lang))
             return
         }
+        if (config.enableTeamPreview && !cn.kurt6.cobblemon_ranked.util.ClientVersionTracker.isPlayerCompatible(player.uuid)) {
+            RankUtils.sendMessage(player, MessageConfig.get("queue.version_outdated", lang))
+            return
+        }
+
 
         if (!canPlayerJoinQueue(player)) {
             RankUtils.sendMessage(player, MessageConfig.get("duo.cannot_join", lang))
@@ -205,6 +210,16 @@ object DuoMatchmakingQueue {
                         return@execute
                     }
 
+                    players.forEach { entry ->
+                        val player = entry.player
+                        BattleHandler.setReturnLocation(
+                            player.uuid,
+                            player.serverWorld,
+                            Triple(player.x, player.y, player.z)
+                        )
+                    }
+
+
                     startNextBattle(teamA, teamB)
                 }
             },
@@ -213,6 +228,11 @@ object DuoMatchmakingQueue {
                 if (entry != null && !queuedPlayers.any { it.player.uuid == survivor.uuid }) {
                     queuedPlayers.add(0, entry)
                     RankUtils.sendMessage(survivor, MessageConfig.get("queue.opponent_disconnected", lang))
+                }
+
+                val arenaToRelease = players.mapNotNull { BattleHandler.playerToArena[it.player.uuid] }.firstOrNull()
+                if (arenaToRelease != null) {
+                    BattleHandler.releaseArena(arenaToRelease)
                 }
             }
         )

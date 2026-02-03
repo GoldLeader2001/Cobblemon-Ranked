@@ -17,6 +17,10 @@ object MessageConfig {
         if (!Files.exists(path)) {
             Files.createDirectories(path.parent)
             val defaultMessages = mapOf(
+                "queue.version_outdated" to mapOf(
+                    "zh" to "§c您的Cobblemon Ranked客户端版本过低！请升级版本后参与排位。",
+                    "en" to "§cYour version of the Cobblemon Ranked client is outdated! Please upgrade to the latest version to participate in ranked matches."
+                ),
                 "queue.mod_required" to mapOf(
                     "zh" to "§c服务器启用了排位选人预览，请安装 Cobblemon Ranked Mod 后再参与排位。",
                     "en" to "§cTeam Preview is enabled. Please install the Cobblemon Ranked Mod to join ranked matches."

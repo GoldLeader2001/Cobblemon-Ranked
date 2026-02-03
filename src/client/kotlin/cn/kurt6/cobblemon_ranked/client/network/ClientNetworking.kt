@@ -2,18 +2,25 @@ package cn.kurt6.cobblemon_ranked.client.network
 
 import cn.kurt6.cobblemon_ranked.client.gui.ModeScreen
 import cn.kurt6.cobblemon_ranked.client.gui.ModeScreen.Companion.modeName
+import cn.kurt6.cobblemon_ranked.network.ClientVersionPayload
 import cn.kurt6.cobblemon_ranked.network.LeaderboardPayload
 import cn.kurt6.cobblemon_ranked.network.PlayerRankDataPayload
 import cn.kurt6.cobblemon_ranked.network.RequestType
 import cn.kurt6.cobblemon_ranked.network.SeasonInfoTextPayload
 import cn.kurt6.cobblemon_ranked.network.TeamSelectionStartPayload
 import cn.kurt6.cobblemon_ranked.network.TeamSelectionEndPayload
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.MinecraftClient
 import net.minecraft.text.Text.translatable
 
+const val CLIENT_MOD_VERSION = "1.4.0"
+
 fun registerClientReceivers() {
-    // 玩家战绩
+    ClientPlayConnectionEvents.JOIN.register { handler, sender, client ->
+        ClientPlayNetworking.send(ClientVersionPayload(CLIENT_MOD_VERSION))
+    }
+
     ClientPlayNetworking.registerGlobalReceiver(PlayerRankDataPayload.ID) { payload, _ ->
         val total = payload.wins + payload.losses
         val rate = if (total == 0) 0.0 else payload.wins.toDouble() / total * 100
@@ -31,17 +38,14 @@ fun registerClientReceivers() {
         updateScreenInfo(RequestType.PLAYER, info)
     }
 
-    // 赛季信息
     ClientPlayNetworking.registerGlobalReceiver(SeasonInfoTextPayload.ID) { payload, _ ->
         updateScreenInfo(RequestType.SEASON, payload.text)
     }
 
-    // 排行榜
     ClientPlayNetworking.registerGlobalReceiver(LeaderboardPayload.ID) { payload, _ ->
         updateScreenInfo(RequestType.LEADERBOARD, payload.text)
     }
 
-    // 选队开始
     ClientPlayNetworking.registerGlobalReceiver(TeamSelectionStartPayload.ID) { payload, context ->
         context.client().execute {
             context.client().setScreen(
@@ -56,7 +60,6 @@ fun registerClientReceivers() {
         }
     }
 
-    // 强制关闭选人界面
     ClientPlayNetworking.registerGlobalReceiver(TeamSelectionEndPayload.ID) { _, context ->
         context.client().execute {
             if (context.client().currentScreen is cn.kurt6.cobblemon_ranked.client.gui.TeamSelectionScreen) {

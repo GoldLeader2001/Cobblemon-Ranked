@@ -14,45 +14,34 @@ import com.cobblemon.mod.common.api.events.CobblemonEvents
 import com.cobblemon.mod.common.api.events.battles.BattleVictoryEvent
 import com.cobblemon.mod.common.battles.BattleFormat
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
-import com.cobblemon.mod.common.entity.pokemon.PokemonEntity
 import com.cobblemon.mod.common.pokemon.Pokemon
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.entity.player.PlayerEntity
+import net.minecraft.registry.RegistryKey
+import net.minecraft.registry.RegistryKeys
+import net.minecraft.registry.Registries
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
-import net.minecraft.registry.Registries
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
-import net.minecraft.entity.EquipmentSlot
-import net.minecraft.entity.ItemEntity
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
 import net.minecraft.util.Identifier
-import net.minecraft.util.math.Box
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 object BattleHandler {
     private val logger = LoggerFactory.getLogger(BattleHandler::class.java)
 
     private val rankedBattles = ConcurrentHashMap<UUID, String>()
     private val battleToIdMap = ConcurrentHashMap<PokemonBattle, UUID>()
-    private val teleportScheduler = Executors.newSingleThreadScheduledExecutor()
-
-    private val battleEntities = ConcurrentHashMap<UUID, MutableSet<PokemonEntity>>()
-    private val cleanupCooldowns = ConcurrentHashMap<UUID, Long>()
 
     private val occupiedArenas = ConcurrentHashMap.newKeySet<BattleArena>()
     private val battleIdToArena = ConcurrentHashMap<UUID, BattleArena>()
-    private val playerToArena = ConcurrentHashMap<UUID, BattleArena>()
+    val playerToArena = ConcurrentHashMap<UUID, BattleArena>()
+
+    private val pokemonOriginalLevels = ConcurrentHashMap<UUID, Int>()
 
     data class PendingBattleRequest(
         val players: List<ServerPlayerEntity>,
@@ -69,7 +58,6 @@ object BattleHandler {
     private val seasonManager get() = CobblemonRanked.seasonManager
 
     private val returnLocations = ConcurrentHashMap<UUID, Pair<ServerWorld, Triple<Double, Double, Double>>>()
-    private var tickCounter = 0
 
     fun requestArena(
         players: List<ServerPlayerEntity>,
@@ -207,58 +195,6 @@ object BattleHandler {
             }
         } catch (e: Exception) {
             logger.error("Error during final battle cleanup", e)
-        }
-    }
-
-    fun markPlayerForCleanup(player: ServerPlayerEntity) {
-        cleanupCooldowns[player.uuid] = System.currentTimeMillis() + 5000L
-        cleanupBattleEntities(player)
-    }
-
-    fun sweepArena(arena: BattleArena, server: MinecraftServer, aggressive: Boolean) {
-        val worldId = Identifier.tryParse(arena.world) ?: return
-        val worldKey = RegistryKey.of(RegistryKeys.WORLD, worldId)
-        val world = server.getWorld(worldKey) ?: return
-
-        val centerPos = arena.playerPositions.firstOrNull() ?: return
-        val radius = 50.0
-
-        val box = Box(
-            centerPos.x - radius, centerPos.y - radius, centerPos.z - radius,
-            centerPos.x + radius, centerPos.y + radius, centerPos.z + radius
-        )
-
-        val entities = world.getEntitiesByClass(net.minecraft.entity.Entity::class.java, box) { entity ->
-            if (entity is ItemEntity) {
-                return@getEntitiesByClass true
-            }
-
-            if (entity is PokemonEntity) {
-                val owner = entity.owner
-
-                if (aggressive) {
-                    return@getEntitiesByClass true
-                } else {
-                    if (owner == null) return@getEntitiesByClass true
-                }
-            }
-            false
-        }
-
-        entities.forEach {
-            if (!it.isRemoved) it.discard()
-        }
-    }
-
-    fun cleanupBattleEntities(player: ServerPlayerEntity) {
-        val entities = battleEntities.remove(player.uuid)
-        entities?.forEach { entity ->
-            try { if (!entity.isRemoved) entity.discard() } catch (e: Exception) { logger.error("Error discarding entity", e) }
-        }
-
-        val arena = playerToArena[player.uuid]
-        if (arena != null) {
-            sweepArena(arena, player.server, true)
         }
     }
 
@@ -433,17 +369,27 @@ object BattleHandler {
     private fun isEgg(pokemon: Pokemon): Boolean = pokemon.state.name.equals("egg", ignoreCase = true)
     private fun isFainted(pokemon: Pokemon): Boolean = pokemon.currentHealth <= 0 || pokemon.isFainted()
 
-    fun shutdown() {
-        teleportScheduler.shutdownNow()
-        rankedBattles.clear()
-        battleToIdMap.clear()
-        returnLocations.clear()
-        battleEntities.values.flatten().forEach { if (!it.isRemoved) it.discard() }
-        battleEntities.clear()
-        cleanupCooldowns.clear()
-        occupiedArenas.clear()
-        pendingRequests.clear()
-        logger.info("BattleHandler shutdown complete")
+    fun savePokemonLevel(pokemonUuid: UUID, level: Int) {
+        pokemonOriginalLevels[pokemonUuid] = level
+    }
+
+    fun restorePokemonLevel(pokemonUuid: UUID, pokemon: com.cobblemon.mod.common.pokemon.Pokemon) {
+        val originalLevel = pokemonOriginalLevels.remove(pokemonUuid)
+        if (originalLevel != null) {
+            pokemon.level = originalLevel
+        }
+    }
+
+    fun restorePlayerPokemonLevels(player: ServerPlayerEntity) {
+        val party = Cobblemon.storage.getParty(player)
+        party.forEach { pokemon ->
+            if (pokemon != null) {
+                val originalLevel = pokemonOriginalLevels.remove(pokemon.uuid)
+                if (originalLevel != null) {
+                    pokemon.level = originalLevel
+                }
+            }
+        }
     }
 
     fun isPlayerInRankedBattle(player: ServerPlayerEntity): Boolean {
@@ -452,63 +398,6 @@ object BattleHandler {
     }
 
     fun register() {
-        ServerEntityEvents.ENTITY_LOAD.register { entity, world ->
-            if (entity is PokemonEntity) {
-                val owner = entity.owner
-                if (owner != null && cleanupCooldowns.containsKey(owner.uuid)) {
-                    val expiry = cleanupCooldowns[owner.uuid] ?: 0L
-                    if (System.currentTimeMillis() < expiry) {
-                        entity.discard()
-                        return@register
-                    } else {
-                        cleanupCooldowns.remove(owner.uuid)
-                    }
-                }
-                if (owner is ServerPlayerEntity && isPlayerInRankedBattle(owner)) {
-                    battleEntities.computeIfAbsent(owner.uuid) { ConcurrentHashMap.newKeySet() }.add(entity)
-                }
-            }
-            if (entity is ItemEntity) {
-                if (battleToIdMap.isNotEmpty()) {
-                    if (shouldClearItem(entity, world)) {
-                        entity.discard()
-                    }
-                }
-            }
-        }
-
-        ServerLivingEntityEvents.ALLOW_DEATH.register { entity, damageSource, amount ->
-            if (entity is PokemonEntity) {
-                val owner = entity.owner
-                if (owner is ServerPlayerEntity && isPlayerInRankedBattle(owner)) {
-                    entity.equipStack(EquipmentSlot.MAINHAND, net.minecraft.item.ItemStack.EMPTY)
-                    entity.equipStack(EquipmentSlot.OFFHAND, net.minecraft.item.ItemStack.EMPTY)
-                    entity.equipStack(EquipmentSlot.HEAD, net.minecraft.item.ItemStack.EMPTY)
-                    entity.equipStack(EquipmentSlot.CHEST, net.minecraft.item.ItemStack.EMPTY)
-                    entity.equipStack(EquipmentSlot.LEGS, net.minecraft.item.ItemStack.EMPTY)
-                    entity.equipStack(EquipmentSlot.FEET, net.minecraft.item.ItemStack.EMPTY)
-                }
-            }
-            true
-        }
-
-        ServerTickEvents.END_SERVER_TICK.register { server ->
-            if (++tickCounter % 10 != 0) return@register
-            val now = System.currentTimeMillis()
-            cleanupCooldowns.entries.removeIf { it.value < now }
-            if (battleToIdMap.isEmpty()) return@register
-            val activeWorlds = battleToIdMap.keys.flatMap { battle -> battle.actors.filterIsInstance<PlayerBattleActor>().mapNotNull { (it.entity as? ServerPlayerEntity)?.serverWorld } }.distinct()
-            activeWorlds.forEach { world ->
-                world.iterateEntities().forEach { entity ->
-                    if (entity is ItemEntity && !entity.isRemoved) {
-                        if (shouldClearItem(entity, world)) {
-                            entity.discard()
-                        }
-                    }
-                }
-            }
-        }
-
         net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents.BEFORE.register { world, player, pos, state, blockEntity ->
             if (player is ServerPlayerEntity && isPlayerInRankedBattle(player)) false else true
         }
@@ -563,20 +452,6 @@ object BattleHandler {
         }
     }
 
-    private fun shouldClearItem(entity: ItemEntity, world: ServerWorld): Boolean {
-        if (battleToIdMap.isEmpty()) return false
-
-        val cleanupRadiusSq = 2500.0
-
-        return battleToIdMap.keys.any { battle ->
-            battle.actors.filterIsInstance<PlayerBattleActor>().any { actor ->
-                val player = actor.entity as? ServerPlayerEntity ?: return@any false
-                if (player.isDisconnected || player.serverWorld != world) return@any false
-                player.squaredDistanceTo(entity) < cleanupRadiusSq
-            }
-        }
-    }
-
     fun handleSelectionPhaseDisconnect(winner: ServerPlayerEntity, loser: ServerPlayerEntity, formatName: String) {
         val seasonId = seasonManager.currentSeasonId
         val winnerData = getOrCreatePlayerData(winner.uuid, seasonId, formatName).apply { playerName = winner.name.string }
@@ -601,68 +476,44 @@ object BattleHandler {
         val arena = arena1 ?: arena2
         if (arena != null) releaseArena(arena)
 
-        markPlayerForCleanup(winner)
-        markPlayerForCleanup(loser)
+        restorePlayerPokemonLevels(winner)
+        restorePlayerPokemonLevels(loser)
+
         if (!winner.isDisconnected) {
             RankUtils.sendMessage(winner, MessageConfig.get("battle.disconnect.winner", config.defaultLang, "elo" to winnerData.elo.toString()))
             sendBattleResultMessage(winner, winnerData, eloDiffWinner)
             grantVictoryRewards(winner, winner.server)
             teleportBackIfPossible(winner)
+            rewardManager.grantRankRewardIfEligible(winner, winnerData.getRankTitle(), formatName, winner.server)
         }
     }
 
     private fun handleDisconnectAsFlee(battle: PokemonBattle, disconnected: ServerPlayerEntity) {
-        val lang = CobblemonRanked.config.defaultLang
-        var battleId: UUID? = null
+        val battleId = battleToIdMap[battle]
+        val formatName = battleId?.let { rankedBattles[it] } ?: return
 
         try {
-            battleId = battleToIdMap[battle]
-            val formatName = battleId?.let { rankedBattles[it] }
-            if (battleId == null || formatName == null) return
-
-            rankedBattles.remove(battleId)
-
-            val arena = battleIdToArena.remove(battleId)
-            playerToArena.remove(disconnected.uuid)
-
-            val seasonId = seasonManager.currentSeasonId
-
             if (formatName == "2v2singles") {
-                val fleeingActor = battle.sides.flatMap { it.actors.toList() }
-                    .firstOrNull { (it as? PlayerBattleActor)?.uuid == disconnected.uuid } as? PlayerBattleActor
-
-                if (fleeingActor != null) {
-                    val loserUuid = disconnected.uuid
-                    val allPlayers = battle.sides.flatMap { it.actors.toList() }.mapNotNull { (it as? PlayerBattleActor)?.entity as? ServerPlayerEntity }
-                    val winner = allPlayers.firstOrNull { it.uuid != loserUuid }
-
-                    DuoBattleManager.updateBattleState(battle)
-
-                    if (Cobblemon.battleRegistry.getBattle(battle.battleId) != null) {
-                        Cobblemon.battleRegistry.closeBattle(battle)
-                    }
-
-                    DuoBattleManager.markPokemonAsFainted(loserUuid, battle)
-                    if (winner != null) {
-                        DuoBattleManager.handleVictory(winner.uuid, loserUuid)
-                        markPlayerForCleanup(winner)
-                    }
-
-                    markPlayerForCleanup(disconnected)
-                    return
-                }
+                DuoBattleManager.handlePlayerQuit(disconnected)
+                cleanupBattleData(battle)
+                return
             }
 
-            val loserUuid = disconnected.uuid
-            val winnerActor = battle.sides.flatMap { it.actors.toList() }
-                .filterIsInstance<PlayerBattleActor>()
-                .firstOrNull { it.uuid != loserUuid } ?: return
+            val seasonId = seasonManager.currentSeasonId
+            val actors = battle.actors.filterIsInstance<PlayerBattleActor>()
+            val disconnectedActor = actors.find { it.uuid == disconnected.uuid }
+            val winner = actors.find { it.uuid != disconnected.uuid }?.entity as? ServerPlayerEntity
 
-            val winnerUuid = winnerActor.uuid
-            val winnerPlayer = disconnected.server.playerManager.getPlayer(winnerUuid)
+            if (disconnectedActor == null || winner == null) {
+                cleanupBattleData(battle)
+                restorePlayerPokemonLevels(disconnected)
+                return
+            }
 
-            val loserData = getOrCreatePlayerData(loserUuid, seasonId, formatName)
-            val winnerData = getOrCreatePlayerData(winnerUuid, seasonId, formatName)
+            DuoBattleManager.markPokemonAsFainted(disconnected.uuid, battle)
+
+            val winnerData = getOrCreatePlayerData(winner.uuid, seasonId, formatName).apply { playerName = winner.name.string }
+            val loserData = getOrCreatePlayerData(disconnected.uuid, seasonId, formatName).apply { playerName = disconnected.name.string }
 
             val oldWinnerElo = winnerData.elo
             val oldLoserElo = loserData.elo
@@ -672,44 +523,33 @@ object BattleHandler {
             val eloDiffWinner = newWinnerElo - oldWinnerElo
             val eloDiffLoser = newLoserElo - oldLoserElo
 
-            loserData.apply { elo = newLoserElo; losses++; winStreak = 0; fleeCount++ }
             winnerData.apply { elo = newWinnerElo; wins++; winStreak++; if (winStreak > bestWinStreak) bestWinStreak = winStreak }
+            loserData.apply { elo = newLoserElo; losses++; winStreak = 0; fleeCount++ }
 
-            loserData.playerName = disconnected.name.string
-            if (winnerPlayer != null) winnerData.playerName = winnerPlayer.name.string
-
-            rankDao.savePlayerData(loserData)
             rankDao.savePlayerData(winnerData)
+            rankDao.savePlayerData(loserData)
 
-            if (Cobblemon.battleRegistry.getBattle(battle.battleId) != null) {
-                Cobblemon.battleRegistry.closeBattle(battle)
+            restorePlayerPokemonLevels(winner)
+            restorePlayerPokemonLevels(disconnected)
+
+            if (!winner.isDisconnected) {
+                RankUtils.sendMessage(winner, MessageConfig.get("battle.disconnect.winner", config.defaultLang, "elo" to winnerData.elo.toString()))
+                sendBattleResultMessage(winner, winnerData, eloDiffWinner)
+                grantVictoryRewards(winner, winner.server)
+                teleportBackIfPossible(winner)
+                rewardManager.grantRankRewardIfEligible(winner, winnerData.getRankTitle(), formatName, winner.server)
             }
 
-            val playersList = mutableListOf<ServerPlayerEntity>()
-            playersList.add(disconnected)
-            if (winnerPlayer != null) playersList.add(winnerPlayer)
-            recordPokemonUsage(playersList, seasonId)
-
-            if (winnerPlayer != null && !winnerPlayer.isDisconnected) {
-                RankUtils.sendMessage(winnerPlayer, MessageConfig.get("battle.disconnect.winner", lang, "elo" to winnerData.elo.toString()))
-                sendBattleResultMessage(winnerPlayer, winnerData, eloDiffWinner)
-                teleportBackIfPossible(winnerPlayer)
-                markPlayerForCleanup(winnerPlayer)
-                playerToArena.remove(winnerUuid)
-            }
-
-            markPlayerForCleanup(disconnected)
-
+            val arena = playerToArena.remove(disconnected.uuid)
+            playerToArena.remove(winner.uuid)
             if (arena != null) {
-                sweepArena(arena, disconnected.server, true)
                 releaseArena(arena)
             }
 
         } catch (e: Exception) {
             logger.error("Error handling disconnect as flee", e)
+            restorePlayerPokemonLevels(disconnected)
         } finally {
-            markPlayerForCleanup(disconnected)
-            cleanupCooldowns.remove(disconnected.uuid)
             if (battleId != null) {
                 battleToIdMap.remove(battle)
             }
@@ -766,17 +606,8 @@ object BattleHandler {
                 rewardManager.grantRankRewardIfEligible(winner, winnerData.getRankTitle(), formatName, winner.server)
                 rewardManager.grantRankRewardIfEligible(loser, loserData.getRankTitle(), formatName, loser.server)
 
-                markPlayerForCleanup(winner)
-                markPlayerForCleanup(loser)
-
-                val arena = battleIdToArena[battleId]
-                if (arena != null) {
-                    teleportScheduler.schedule({
-                        winner.server.execute {
-                            sweepArena(arena, winner.server, false)
-                        }
-                    }, 1, TimeUnit.SECONDS)
-                }
+                restorePlayerPokemonLevels(winner)
+                restorePlayerPokemonLevels(loser)
 
                 teleportBackIfPossible(winner)
                 teleportBackIfPossible(loser)
@@ -866,14 +697,8 @@ object BattleHandler {
         }
     }
 
-    fun restoreLevelsFromDatabase(player: ServerPlayerEntity) {
-        teleportBackIfPossible(player)
-    }
-
     fun forceCleanupPlayerBattleData(player: ServerPlayerEntity) {
         returnLocations.remove(player.uuid)
         playerToArena.remove(player.uuid)
-        cleanupCooldowns.remove(player.uuid)
-        markPlayerForCleanup(player)
     }
 }
