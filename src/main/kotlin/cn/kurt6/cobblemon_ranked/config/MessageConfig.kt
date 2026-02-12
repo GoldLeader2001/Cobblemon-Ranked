@@ -544,6 +544,10 @@ object MessageConfig {
                     "zh" to "§c队伍包含禁用宝可梦: {names}",
                     "en" to "§cTeam contains banned Pokémon: {names}"
                 ),
+                "battle.team.restricted_pokemon" to mapOf(
+                    "zh" to "§c队伍包含禁用宝可梦: {names}",
+                    "en" to "§cTeam contains too many Restricted Pokémon: {names}"
+                ),
                 "battle.team.overleveled" to mapOf(
                     "zh" to "§c宝可梦等级超过{max}级: {names}",
                     "en" to "§cPokémon exceed level {max}: {names}"

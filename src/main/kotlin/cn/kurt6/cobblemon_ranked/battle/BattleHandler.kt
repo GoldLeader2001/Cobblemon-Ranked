@@ -237,13 +237,20 @@ object BattleHandler {
         val violations = mutableListOf<String>()
         val speciesCount = mutableMapOf<String, Int>()
         val heldItems = mutableListOf<String>()
+        val restricteds = mutableListOf<String>()
         val seasonId = CobblemonRanked.seasonManager.currentSeasonId
+        var restrictedCounter = 0
 
         pokemonList.forEach { pokemon ->
             val speciesName = pokemon.species.name.lowercase()
 
             if (config.bannedPokemon.map { it.lowercase() }.contains(speciesName)) {
                 violations.add("banned_pokemon:${pokemon.species.name}")
+            }
+
+            if (config.restrictedPokemon.map { it.lowercase() }.contains(speciesName)) {
+                restrictedCounter++
+                restricteds.add(pokemon.species.name)
             }
 
             if (config.maxLevel > 0 && pokemon.level > config.maxLevel) {
@@ -311,6 +318,12 @@ object BattleHandler {
             }
         }
 
+        if (restrictedCounter > config.restrictedCount) {
+            restricteds.forEach { name ->
+                violations.add("restricted_pokemon:${name}")
+            }
+        }
+
         if (!config.allowDuplicateSpecies) {
             speciesCount.filter { it.value > 1 }.keys.forEach { species ->
                 violations.add("duplicate_species:$species")
@@ -343,6 +356,7 @@ object BattleHandler {
 
                 when (type) {
                     "banned_pokemon" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.banned_pokemon", lang, "names" to detail))
+                    "restricted_pokemon" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.restricted_pokemon", lang, "names" to detail))
                     "overlevel" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.overleveled", lang, "max" to config.maxLevel.toString(), "names" to detail))
                     "duplicate_species" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.duplicates", lang, "names" to detail))
                     "duplicate_items" -> RankUtils.sendMessage(player, MessageConfig.get("battle.team.duplicate_items", lang))

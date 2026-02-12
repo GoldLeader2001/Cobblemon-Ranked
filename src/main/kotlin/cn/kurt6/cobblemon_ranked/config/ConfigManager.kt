@@ -106,6 +106,12 @@ object ConfigManager {
                     ?.map { it.value as String }
                     ?: rawConfig.bannedHeldItems
 
+                val rawRestrictedPokemon = json.get("restrictedPokemon") as? blue.endless.jankson.JsonArray
+                val fixedRestrictedPokemon = rawRestrictedPokemon
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.restrictedPokemon
+
                 val rawBannedPokemon = json.get("bannedPokemon") as? blue.endless.jankson.JsonArray
                 val fixedBannedPokemon = rawBannedPokemon
                     ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
@@ -165,6 +171,9 @@ object ConfigManager {
 
                 val rawMinElo = json.get("minElo")
                 val fixedMinElo = rawMinElo?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.minElo
+
+                val rawRestrictedCount = json.get("restrictedCount")
+                val fixedRestrictedCount = rawRestrictedCount?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.restrictedCount
 
                 val rawLoserProtectionRate = json.get("loserProtectionRate")
                 val fixedLoserProtectionRate = rawLoserProtectionRate?.toString()?.removeSurrounding("\"")?.toDoubleOrNull() ?: rawConfig.loserProtectionRate
@@ -291,6 +300,7 @@ object ConfigManager {
                     bannedCarriedItems = fixedBannedCarriedItems,
                     bannedHeldItems = fixedBannedHeldItems,
                     bannedPokemon = fixedBannedPokemon,
+                    restrictedPokemon = fixedRestrictedPokemon,
                     maxQueueTime = fixedMaxQueueTime,
                     allowDuplicateItems = fixedAllowDuplicateItems,
                     enableTeamPreview = fixedEnableTeamPreview,
@@ -308,6 +318,7 @@ object ConfigManager {
                     initialElo = fixedInitialElo,
                     eloKFactor = fixedEloKFactor,
                     minElo = fixedMinElo,
+                    restrictedCount = fixedRestrictedCount,
                     loserProtectionRate = fixedLoserProtectionRate,
                     allowDuplicateSpecies = fixedAllowDuplicateSpecies,
                     maxLevel = fixedMaxLevel,
