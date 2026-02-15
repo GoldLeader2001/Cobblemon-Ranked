@@ -545,7 +545,7 @@ object MessageConfig {
                     "en" to "§cTeam contains banned Pokémon: {names}"
                 ),
                 "battle.team.restricted_pokemon" to mapOf(
-                    "zh" to "§c队伍包含禁用宝可梦: {names}",
+                    "zh" to "§c(Needs Translation)Team contains too many Restricted Pokémon: {names}",
                     "en" to "§cTeam contains too many Restricted Pokémon: {names}"
                 ),
                 "battle.team.overleveled" to mapOf(

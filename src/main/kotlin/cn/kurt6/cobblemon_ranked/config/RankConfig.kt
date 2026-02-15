@@ -69,46 +69,88 @@ data class RankConfig(
     val loserProtectionRate: Double = 1.0,
 
     @Comment("Number of Restricted Pokemon Allowed")
-    val restrictedCount: Int = 1,
+    val singlesRestrictedCount: Int = 1,
 
     @Comment("Restricted Pokémon / 禁止使用的宝可梦")
-    var restrictedPokemon: List<String> = listOf("Groudon", "Kyogre"),
+    var singlesRestrictedPokemon: List<String> = listOf("Groudon", "Kyogre"),
 
     @Comment("Banned Pokémon / 禁止使用的宝可梦")
-    var bannedPokemon: List<String> = listOf("Mewtwo", "Arceus"),
+    var singlesBannedPokemon: List<String> = listOf("Mewtwo", "Arceus"),
 
     @Comment("Banned held items for Pokémon / 禁止宝可梦携带的道具")
-    var bannedHeldItems: List<String> = listOf("cobblemon:leftovers"),
+    var singlesBannedHeldItems: List<String> = listOf("cobblemon:leftovers"),
 
     @Comment("Banned items in player's inventory / 禁止玩家背包携带的物品")
-    var bannedCarriedItems: List<String> = listOf("cobblemon:leftovers"),
+    var singlesBannedCarriedItems: List<String> = listOf("cobblemon:leftovers"),
 
     @Comment("Banned moves for Pokémon / 禁止宝可梦使用的技能")
-    var bannedMoves: List<String> = listOf("leechseed"),
+    var singlesBannedMoves: List<String> = listOf("leechseed"),
 
     @Comment("Banned personalities for Pokémon /  禁止宝可梦使用的性格")
-    var bannedNatures: List<String> = listOf(),
+    var singlesBannedNatures: List<String> = listOf(),
 
     @Comment("Banned abilities for Pokémon / 禁止宝可梦使用的特性")
-    var bannedAbilities: List<String> = listOf(),
+    var singlesBannedAbilities: List<String> = listOf(),
 
     @Comment("Banned gender for Pokémon / 禁止宝可梦使用的性别")
-    var bannedGenders: List<String> = listOf(),
+    var singlesBannedGenders: List<String> = listOf(),
 
     @Comment("Banned shiny Pokémon from participating in battles / 是否禁止闪光宝可梦参战")
-    var bannedShiny: Boolean = false,
+    var singlesBannedShiny: Boolean = false,
 
     @Comment("Ban Pokémon with usage rate below this threshold (0 to disable, 0.1 = 10%) / 禁止使用率低于此阈值的宝可梦（0为关闭，0.1表示10%）")
-    var banUsageBelow: Double = 0.0,
+    var singlesBanUsageBelow: Double = 0.0,
 
     @Comment("Ban Pokémon with usage rate above this threshold (0 to disable, 0.1 = 10%) / 禁止使用率高于此阈值的宝可梦（0为关闭，0.1表示10%）")
-    var banUsageAbove: Double = 0.0,
+    var singlesBanUsageAbove: Double = 0.0,
 
     @Comment("Ban top N most used Pokémon (0 to disable) / 禁止使用排行前N的宝可梦（0为关闭）")
-    var banTopUsed: Int = 0,
+    var singlesBanTopUsed: Int = 0,
 
     @Comment("Only allow base form Pokémon that can evolve / 是否只允许使用能够进化的最初形态")
-    var onlyBaseFormWithEvolution: Boolean = false,
+    var singlesOnlyBaseFormWithEvolution: Boolean = false,
+
+    @Comment("Number of Restricted Pokemon Allowed")
+    val doublesRestrictedCount: Int = 1,
+
+    @Comment("Restricted Pokémon / 禁止使用的宝可梦")
+    var doublesRestrictedPokemon: List<String> = listOf("Groudon", "Kyogre"),
+
+    @Comment("Banned Pokémon / 禁止使用的宝可梦")
+    var doublesBannedPokemon: List<String> = listOf("Mewtwo", "Arceus"),
+
+    @Comment("Banned held items for Pokémon / 禁止宝可梦携带的道具")
+    var doublesBannedHeldItems: List<String> = listOf("cobblemon:leftovers"),
+
+    @Comment("Banned items in player's inventory / 禁止玩家背包携带的物品")
+    var doublesBannedCarriedItems: List<String> = listOf("cobblemon:leftovers"),
+
+    @Comment("Banned moves for Pokémon / 禁止宝可梦使用的技能")
+    var doublesBannedMoves: List<String> = listOf("leechseed"),
+
+    @Comment("Banned personalities for Pokémon /  禁止宝可梦使用的性格")
+    var doublesBannedNatures: List<String> = listOf(),
+
+    @Comment("Banned abilities for Pokémon / 禁止宝可梦使用的特性")
+    var doublesBannedAbilities: List<String> = listOf(),
+
+    @Comment("Banned gender for Pokémon / 禁止宝可梦使用的性别")
+    var doublesBannedGenders: List<String> = listOf(),
+
+    @Comment("Banned shiny Pokémon from participating in battles / 是否禁止闪光宝可梦参战")
+    var doublesBannedShiny: Boolean = false,
+
+    @Comment("Ban Pokémon with usage rate below this threshold (0 to disable, 0.1 = 10%) / 禁止使用率低于此阈值的宝可梦（0为关闭，0.1表示10%）")
+    var doublesBanUsageBelow: Double = 0.0,
+
+    @Comment("Ban Pokémon with usage rate above this threshold (0 to disable, 0.1 = 10%) / 禁止使用率高于此阈值的宝可梦（0为关闭，0.1表示10%）")
+    var doublesBanUsageAbove: Double = 0.0,
+
+    @Comment("Ban top N most used Pokémon (0 to disable) / 禁止使用排行前N的宝可梦（0为关闭）")
+    var doublesBanTopUsed: Int = 0,
+
+    @Comment("Only allow base form Pokémon that can evolve / 是否只允许使用能够进化的最初形态")
+    var doublesOnlyBaseFormWithEvolution: Boolean = false,
 
     @Comment("Allowed battle formats: 'singles', 'doubles', '2v2singles' / 允许的战斗模式：'singles'（单打）, 'doubles'（双打）, '2v2singles'（2v2单打）")
     var allowedFormats: List<String> = listOf("singles", "doubles", "2v2singles"),

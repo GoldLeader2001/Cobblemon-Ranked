@@ -1,5 +1,6 @@
 package cn.kurt6.cobblemon_ranked.battle
 
+import blue.endless.jankson.Comment
 import cn.kurt6.cobblemon_ranked.*
 import cn.kurt6.cobblemon_ranked.config.ArenaCoordinate
 import cn.kurt6.cobblemon_ranked.config.BattleArena
@@ -219,6 +220,30 @@ object BattleHandler {
 
         val pokemonList = validPokemon
         val config = CobblemonRanked.config
+        var restrictedCount = config.singlesRestrictedCount
+        var restrictedPokemon = config.singlesRestrictedPokemon
+        var bannedPokemon = config.singlesBannedPokemon
+        var bannedHeldItems  = config.singlesBannedHeldItems
+        var bannedCarriedItems = config.singlesBannedCarriedItems
+        var bannedMoves = config.singlesBannedMoves
+        var bannedNatures  = config.singlesBannedNatures
+        var bannedAbilities = config.singlesBannedAbilities
+        var bannedGenders = config.singlesBannedGenders
+        var bannedShiny = config.singlesBannedShiny
+
+        if (format == BattleFormat.GEN_9_DOUBLES) {
+            restrictedCount = config.doublesRestrictedCount
+            restrictedPokemon = config.doublesRestrictedPokemon
+            bannedPokemon = config.doublesBannedPokemon
+            bannedHeldItems  = config.doublesBannedHeldItems
+            bannedCarriedItems = config.doublesBannedCarriedItems
+            bannedMoves = config.doublesBannedMoves
+            bannedNatures  = config.doublesBannedNatures
+            bannedAbilities = config.doublesBannedAbilities
+            bannedGenders = config.doublesBannedGenders
+            bannedShiny = config.doublesBannedShiny
+        }
+
 
         if (format == BattleFormat.GEN_9_DOUBLES && pokemonList.size < 2) {
             RankUtils.sendMessage(player, MessageConfig.get("battle.team.too_small", lang, "min" to "2"))
@@ -244,11 +269,11 @@ object BattleHandler {
         pokemonList.forEach { pokemon ->
             val speciesName = pokemon.species.name.lowercase()
 
-            if (config.bannedPokemon.map { it.lowercase() }.contains(speciesName)) {
+            if (bannedPokemon.map { it.lowercase() }.contains(speciesName)) {
                 violations.add("banned_pokemon:${pokemon.species.name}")
             }
 
-            if (config.restrictedPokemon.map { it.lowercase() }.contains(speciesName)) {
+            if (restrictedPokemon.map { it.lowercase() }.contains(speciesName)) {
                 restrictedCounter++
                 restricteds.add(pokemon.species.name)
             }
@@ -274,51 +299,51 @@ object BattleHandler {
                 violations.add("fainted:${pokemon.species.name}")
             }
 
-            val bannedHeldItems = config.bannedHeldItems.map { it.lowercase() }
+            val setBannedHeldItems = bannedHeldItems.map { it.lowercase() }
             val stack = pokemon.heldItem()
             if (!stack.isEmpty) {
                 val itemId = Registries.ITEM.getId(stack.item).toString().lowercase()
-                if (itemId in bannedHeldItems) {
+                if (itemId in setBannedHeldItems) {
                     violations.add("banned_held:${pokemon.species.name}($itemId)")
                 }
             }
 
-            val bannedNatures = config.bannedNatures.map { it.lowercase() }
-            if (pokemon.nature.name.toString().lowercase() in bannedNatures) {
+            val setBannedNatures = bannedNatures.map { it.lowercase() }
+            if (pokemon.nature.name.toString().lowercase() in setBannedNatures) {
                 violations.add("banned_nature:${pokemon.species.name}(${pokemon.nature.name})")
             }
 
-            val bannedAbilities = config.bannedAbilities.map { it.uppercase() }
-            if (pokemon.ability.name.uppercase() in bannedAbilities) {
+            val setBannedAbilities = bannedAbilities.map { it.uppercase() }
+            if (pokemon.ability.name.uppercase() in setBannedAbilities) {
                 violations.add("banned_ability:${pokemon.species.name}(${pokemon.ability.name})")
             }
 
-            val bannedGenders = config.bannedGenders.map { it.uppercase() }
-            if (pokemon.gender?.name?.uppercase() in bannedGenders) {
+            val setBannedGenders = bannedGenders.map { it.uppercase() }
+            if (pokemon.gender?.name?.uppercase() in setBannedGenders) {
                 violations.add("banned_gender:${pokemon.species.name}(${pokemon.gender?.name})")
             }
 
-            val bannedMoves = config.bannedMoves.map { it.lowercase().trim() }
+            val setBannedMoves = bannedMoves.map { it.lowercase().trim() }
             val pokemonBannedMoves = pokemon.moveSet.getMovesWithNulls()
                 .mapNotNull { move ->
                     val moveName = move?.name?.toString()?.lowercase()
-                    if (moveName in bannedMoves) moveName else null
+                    if (moveName in setBannedMoves) moveName else null
                 }
             if (pokemonBannedMoves.isNotEmpty()) {
                 violations.add("banned_moves:${pokemon.species.name}(${pokemonBannedMoves.joinToString(",")})")
             }
 
-            if (config.bannedShiny && pokemon.shiny) {
+            if (bannedShiny && pokemon.shiny) {
                 violations.add("shiny:${pokemon.species.name}")
             }
 
-            val usageResult = PokemonUsageValidator.validateUsageRestrictions(player, pokemon, seasonId, lang)
+            val usageResult = PokemonUsageValidator.validateUsageRestrictions(player, pokemon, seasonId, lang, format)
             if (!usageResult.isValid) {
                 usageResult.errorMessage?.let { violations.add(it) }
             }
         }
 
-        if (restrictedCounter > config.restrictedCount) {
+        if (restrictedCounter > restrictedCount) {
             restricteds.forEach { name ->
                 violations.add("restricted_pokemon:${name}")
             }
@@ -337,12 +362,12 @@ object BattleHandler {
             }
         }
 
-        val bannedItems = config.bannedCarriedItems.map { it.lowercase() }
+        val setBannedItems = bannedCarriedItems.map { it.lowercase() }
         val inventory = player.inventory
         val violatedItems = inventory.main
             .filterNot { it.isEmpty }
             .map { Registries.ITEM.getId(it.item).toString().lowercase() }
-            .filter { it in bannedItems }
+            .filter { it in setBannedItems }
 
         if (violatedItems.isNotEmpty()) {
             violations.add("player_banned_items:${violatedItems.joinToString(",")}")

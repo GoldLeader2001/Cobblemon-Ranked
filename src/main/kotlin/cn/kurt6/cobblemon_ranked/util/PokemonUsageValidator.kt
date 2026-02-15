@@ -5,6 +5,7 @@ import cn.kurt6.cobblemon_ranked.config.MessageConfig
 import com.cobblemon.mod.common.pokemon.Pokemon
 import com.cobblemon.mod.common.pokemon.Species
 import net.minecraft.server.network.ServerPlayerEntity
+import com.cobblemon.mod.common.battles.BattleFormat
 
 object PokemonUsageValidator {
 
@@ -12,21 +13,35 @@ object PokemonUsageValidator {
         player: ServerPlayerEntity,
         pokemon: Pokemon,
         seasonId: Int,
-        lang: String
+        lang: String,
+        format: BattleFormat
     ): ValidationResult {
         val config = CobblemonRanked.config
+        if (format == BattleFormat.GEN_9_SINGLES){
+            if (config.singlesOnlyBaseFormWithEvolution) {
+                val result = validateBaseFormWithEvolution(pokemon, lang)
+                if (!result.isValid) return result
+            }
 
-        if (config.onlyBaseFormWithEvolution) {
-            val result = validateBaseFormWithEvolution(pokemon, lang)
-            if (!result.isValid) return result
+            if (config.singlesBanUsageBelow > 0.0 || config.singlesBanUsageAbove > 0.0 || config.singlesBanTopUsed > 0) {
+                val result = validateUsageRate(pokemon, seasonId, lang, config.singlesBanUsageAbove, config.singlesBanUsageAbove, config.singlesBanTopUsed)
+                if (!result.isValid) return result
+            }
+
+            return ValidationResult(true)
+        } else {
+            if (config.doublesOnlyBaseFormWithEvolution) {
+                val result = validateBaseFormWithEvolution(pokemon, lang)
+                if (!result.isValid) return result
+            }
+
+            if (config.doublesBanUsageBelow > 0.0 || config.doublesBanUsageAbove > 0.0 || config.doublesBanTopUsed > 0) {
+                val result = validateUsageRate(pokemon, seasonId, lang, config.doublesBanUsageBelow, config.doublesBanUsageAbove, config.doublesBanTopUsed)
+                if (!result.isValid) return result
+            }
+
+            return ValidationResult(true)
         }
-
-        if (config.banUsageBelow > 0.0 || config.banUsageAbove > 0.0 || config.banTopUsed > 0) {
-            val result = validateUsageRate(pokemon, seasonId, lang)
-            if (!result.isValid) return result
-        }
-
-        return ValidationResult(true)
     }
 
     private fun validateBaseFormWithEvolution(pokemon: Pokemon, lang: String): ValidationResult {
@@ -49,7 +64,7 @@ object PokemonUsageValidator {
         return ValidationResult(true)
     }
 
-    private fun validateUsageRate(pokemon: Pokemon, seasonId: Int, lang: String): ValidationResult {
+    private fun validateUsageRate(pokemon: Pokemon, seasonId: Int, lang: String, banUsageBelow: Double, banUsageAbove: Double, banTopUsed: Int ): ValidationResult {
         val config = CobblemonRanked.config
         val dao = CobblemonRanked.rankDao
         val speciesName = pokemon.species.name.lowercase()
@@ -64,8 +79,8 @@ object PokemonUsageValidator {
         val pokemonUsage = usageStats[speciesName] ?: 0
         val usageRate = pokemonUsage.toDouble() / totalUsage
 
-        if (config.banUsageBelow > 0.0 && usageRate < config.banUsageBelow) {
-            val threshold = String.format("%.1f%%", config.banUsageBelow * 100)
+        if (banUsageBelow > 0.0 && usageRate < banUsageBelow) {
+            val threshold = String.format("%.1f%%", banUsageBelow * 100)
             val current = String.format("%.2f%%", usageRate * 100)
             return ValidationResult(
                 false,
@@ -77,8 +92,8 @@ object PokemonUsageValidator {
             )
         }
 
-        if (config.banUsageAbove > 0.0 && usageRate > config.banUsageAbove) {
-            val threshold = String.format("%.1f%%", config.banUsageAbove * 100)
+        if (banUsageAbove > 0.0 && usageRate > banUsageAbove) {
+            val threshold = String.format("%.1f%%", banUsageAbove * 100)
             val current = String.format("%.2f%%", usageRate * 100)
             return ValidationResult(
                 false,
@@ -90,10 +105,10 @@ object PokemonUsageValidator {
             )
         }
 
-        if (config.banTopUsed > 0) {
+        if (banTopUsed > 0) {
             val topPokemon = usageStats.entries
                 .sortedByDescending { it.value }
-                .take(config.banTopUsed)
+                .take(banTopUsed)
                 .map { it.key }
 
             if (speciesName in topPokemon) {
@@ -103,7 +118,7 @@ object PokemonUsageValidator {
                     MessageConfig.get("battle.team.in_top_used", lang,
                         "name" to pokemon.species.name,
                         "rank" to rank.toString(),
-                        "limit" to config.banTopUsed.toString()
+                        "limit" to banTopUsed.toString()
                     )
                 )
             }

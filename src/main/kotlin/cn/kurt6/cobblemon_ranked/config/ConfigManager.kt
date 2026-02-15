@@ -94,29 +94,53 @@ object ConfigManager {
                     formatKey to rankToCommands
                 }?.toMap() ?: emptyMap()
 
-                val rawBannedCarriedItems = json.get("bannedCarriedItems") as? blue.endless.jankson.JsonArray
-                val fixedBannedCarriedItems = rawBannedCarriedItems
+                val rawSinglesBannedCarriedItems = json.get("singlesBannedCarriedItems") as? blue.endless.jankson.JsonArray
+                val fixedSinglesBannedCarriedItems = rawSinglesBannedCarriedItems
                     ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
                     ?.map { it.value as String }
-                    ?: rawConfig.bannedCarriedItems
+                    ?: rawConfig.singlesBannedCarriedItems
 
-                val rawBannedHeldItems = json.get("bannedHeldItems") as? blue.endless.jankson.JsonArray
-                val fixedBannedHeldItems = rawBannedHeldItems
+                val rawSinglesBannedHeldItems = json.get("singlesBannedHeldItems") as? blue.endless.jankson.JsonArray
+                val fixedSinglesBannedHeldItems = rawSinglesBannedHeldItems
                     ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
                     ?.map { it.value as String }
-                    ?: rawConfig.bannedHeldItems
+                    ?: rawConfig.singlesBannedHeldItems
 
-                val rawRestrictedPokemon = json.get("restrictedPokemon") as? blue.endless.jankson.JsonArray
-                val fixedRestrictedPokemon = rawRestrictedPokemon
+                val rawSinglesRestrictedPokemon = json.get("singlesRestrictedPokemon") as? blue.endless.jankson.JsonArray
+                val fixedSinglesRestrictedPokemon = rawSinglesRestrictedPokemon
                     ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
                     ?.map { it.value as String }
-                    ?: rawConfig.restrictedPokemon
+                    ?: rawConfig.singlesRestrictedPokemon
 
-                val rawBannedPokemon = json.get("bannedPokemon") as? blue.endless.jankson.JsonArray
-                val fixedBannedPokemon = rawBannedPokemon
+                val rawSinglesBannedPokemon = json.get("singlesBannedPokemon") as? blue.endless.jankson.JsonArray
+                val fixedSinglesBannedPokemon = rawSinglesBannedPokemon
                     ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
                     ?.map { it.value as String }
-                    ?: rawConfig.bannedPokemon
+                    ?: rawConfig.singlesBannedPokemon
+
+                val rawDoublesBannedCarriedItems = json.get("doublesBannedCarriedItems") as? blue.endless.jankson.JsonArray
+                val fixedDoublesBannedCarriedItems = rawDoublesBannedCarriedItems
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.doublesBannedCarriedItems
+
+                val rawDoublesBannedHeldItems = json.get("doublesBannedHeldItems") as? blue.endless.jankson.JsonArray
+                val fixedDoublesBannedHeldItems = rawDoublesBannedHeldItems
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.doublesBannedHeldItems
+
+                val rawDoublesRestrictedPokemon = json.get("doublesRestrictedPokemon") as? blue.endless.jankson.JsonArray
+                val fixedDoublesRestrictedPokemon = rawDoublesRestrictedPokemon
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.doublesRestrictedPokemon
+
+                val rawDoublesBannedPokemon = json.get("doublesBannedPokemon") as? blue.endless.jankson.JsonArray
+                val fixedDoublesBannedPokemon = rawDoublesBannedPokemon
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.doublesBannedPokemon
 
                 val rawAllowedFormats = json.get("allowedFormats") as? blue.endless.jankson.JsonArray
                 val fixedAllowedFormats = rawAllowedFormats
@@ -172,8 +196,11 @@ object ConfigManager {
                 val rawMinElo = json.get("minElo")
                 val fixedMinElo = rawMinElo?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.minElo
 
-                val rawRestrictedCount = json.get("restrictedCount")
-                val fixedRestrictedCount = rawRestrictedCount?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.restrictedCount
+                val rawSinglesRestrictedCount = json.get("singlesRestrictedCount")
+                val fixedSinglesRestrictedCount = rawSinglesRestrictedCount?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.singlesRestrictedCount
+
+                val rawDoublesRestrictedCount = json.get("doublesRestrictedCount")
+                val fixedDoublesRestrictedCount = rawDoublesRestrictedCount?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.doublesRestrictedCount
 
                 val rawLoserProtectionRate = json.get("loserProtectionRate")
                 val fixedLoserProtectionRate = rawLoserProtectionRate?.toString()?.removeSurrounding("\"")?.toDoubleOrNull() ?: rawConfig.loserProtectionRate
@@ -201,32 +228,59 @@ object ConfigManager {
                     rawConfig.rankRequirements
                 }
 
-                val rawBannedMoves = json.get("bannedMoves") as? blue.endless.jankson.JsonArray
-                val fixedBannedMoves = rawBannedMoves
+                val rawSinglesBannedMoves = json.get("singlesBannedMoves") as? blue.endless.jankson.JsonArray
+                val fixedSinglesBannedMoves = rawSinglesBannedMoves
                     ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
                     ?.map { it.value as String }
-                    ?: rawConfig.bannedMoves
+                    ?: rawConfig.singlesBannedMoves
 
-                val rawBannedNatures = json.get("bannedNatures") as? blue.endless.jankson.JsonArray
-                val fixedBannedNatures = rawBannedNatures
+                val rawSinglesBannedNatures = json.get("singlesBannedNatures") as? blue.endless.jankson.JsonArray
+                val fixedSinglesBannedNatures = rawSinglesBannedNatures
                     ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
                     ?.map { it.value as String }
-                    ?: rawConfig.bannedCarriedItems
+                    ?: rawConfig.singlesBannedNatures
 
-                val rawBannedAbilities = json.get("bannedAbilities") as? blue.endless.jankson.JsonArray
-                val fixedBannedAbilities = rawBannedAbilities
+                val rawSinglesBannedAbilities = json.get("singlesBannedAbilities") as? blue.endless.jankson.JsonArray
+                val fixedSinglesBannedAbilities = rawSinglesBannedAbilities
                     ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
                     ?.map { it.value as String }
-                    ?: rawConfig.bannedAbilities
+                    ?: rawConfig.singlesBannedAbilities
 
-                val rawBannedGenders = json.get("bannedGenders") as? blue.endless.jankson.JsonArray
-                val fixedBannedGenders = rawBannedGenders
+                val rawSinglesBannedGenders = json.get("singlesBannedGenders") as? blue.endless.jankson.JsonArray
+                val fixedSinglesBannedGenders = rawSinglesBannedGenders
                     ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
                     ?.map { it.value as String }
-                    ?: rawConfig.bannedGenders
+                    ?: rawConfig.singlesBannedGenders
 
-                val rawBannedShiny = json.get("bannedShiny")
-                val fixedBannedShiny = rawBannedShiny?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.bannedShiny
+                val rawSinglesBannedShiny = json.get("singlesBannedShiny")
+                val fixedSinglesBannedShiny = rawSinglesBannedShiny?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.singlesBannedShiny
+
+                val rawDoublesBannedMoves = json.get("doublesBannedMoves") as? blue.endless.jankson.JsonArray
+                val fixedDoublesBannedMoves = rawDoublesBannedMoves
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.doublesBannedMoves
+
+                val rawDoublesBannedNatures = json.get("doublesBannedNatures") as? blue.endless.jankson.JsonArray
+                val fixedDoublesBannedNatures = rawDoublesBannedNatures
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.doublesBannedNatures
+
+                val rawDoublesBannedAbilities = json.get("doublesBannedAbilities") as? blue.endless.jankson.JsonArray
+                val fixedDoublesBannedAbilities = rawDoublesBannedAbilities
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.doublesBannedAbilities
+
+                val rawDoublesBannedGenders = json.get("doublesBannedGenders") as? blue.endless.jankson.JsonArray
+                val fixedDoublesBannedGenders = rawDoublesBannedGenders
+                    ?.mapNotNull { it as? blue.endless.jankson.JsonPrimitive }
+                    ?.map { it.value as String }
+                    ?: rawConfig.doublesBannedGenders
+
+                val rawDoublesBannedShiny = json.get("doublesBannedShiny")
+                val fixedDoublesBannedShiny = rawDoublesBannedShiny?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.doublesBannedShiny
 
                 val rawEnableCrossServer = json.get("enableCrossServer")
                 val fixedEnableCrossServer = rawEnableCrossServer?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.enableCrossServer
@@ -249,17 +303,29 @@ object ConfigManager {
                 val rawcloudWebSocketUrl = json.get("cloudWebSocketUrl")
                 val fixedcloudWebSocketUrl = rawcloudWebSocketUrl?.toString()?.removeSurrounding("\"") ?: rawConfig.cloudWebSocketUrl
 
-                val rawBanUsageBelow = json.get("banUsageBelow")
-                val fixedBanUsageBelow = rawBanUsageBelow?.toString()?.removeSurrounding("\"")?.toDoubleOrNull() ?: rawConfig.banUsageBelow
+                val rawSinglesBanUsageBelow = json.get("singlesBanUsageBelow")
+                val fixedSinglesBanUsageBelow = rawSinglesBanUsageBelow?.toString()?.removeSurrounding("\"")?.toDoubleOrNull() ?: rawConfig.singlesBanUsageBelow
 
-                val rawBanUsageAbove = json.get("banUsageAbove")
-                val fixedBanUsageAbove = rawBanUsageAbove?.toString()?.removeSurrounding("\"")?.toDoubleOrNull() ?: rawConfig.banUsageAbove
+                val rawSinglesBanUsageAbove = json.get("singlesBanUsageAbove")
+                val fixedSinglesBanUsageAbove = rawSinglesBanUsageAbove?.toString()?.removeSurrounding("\"")?.toDoubleOrNull() ?: rawConfig.singlesBanUsageAbove
 
-                val rawBanTopUsed = json.get("banTopUsed")
-                val fixedBanTopUsed = rawBanTopUsed?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.banTopUsed
+                val rawSinglesBanTopUsed = json.get("singlesBanTopUsed")
+                val fixedSinglesBanTopUsed = rawSinglesBanTopUsed?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.singlesBanTopUsed
 
-                val rawOnlyBaseFormWithEvolution = json.get("onlyBaseFormWithEvolution")
-                val fixedOnlyBaseFormWithEvolution = rawOnlyBaseFormWithEvolution?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.onlyBaseFormWithEvolution
+                val rawSinglesOnlyBaseFormWithEvolution = json.get("singleOnlyBaseFormWithEvolution")
+                val fixedSinglesOnlyBaseFormWithEvolution = rawSinglesOnlyBaseFormWithEvolution?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.singlesOnlyBaseFormWithEvolution
+
+                val rawDoublesBanUsageBelow = json.get("doublesBanUsageBelow")
+                val fixedDoublesBanUsageBelow = rawDoublesBanUsageBelow?.toString()?.removeSurrounding("\"")?.toDoubleOrNull() ?: rawConfig.doublesBanUsageBelow
+
+                val rawDoublesBanUsageAbove = json.get("doublesBanUsageAbove")
+                val fixedDoublesBanUsageAbove = rawDoublesBanUsageAbove?.toString()?.removeSurrounding("\"")?.toDoubleOrNull() ?: rawConfig.doublesBanUsageAbove
+
+                val rawDoublesBanTopUsed = json.get("doublesBanTopUsed")
+                val fixedDoublesBanTopUsed = rawDoublesBanTopUsed?.toString()?.removeSurrounding("\"")?.toIntOrNull() ?: rawConfig.doublesBanTopUsed
+
+                val rawDoublesOnlyBaseFormWithEvolution = json.get("doublesOnlyBaseFormWithEvolution")
+                val fixedDoublesOnlyBaseFormWithEvolution = rawDoublesOnlyBaseFormWithEvolution?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.doublesOnlyBaseFormWithEvolution
 
                 val rawAllowDuplicateItems = json.get("allowDuplicateItems")
                 val fixedAllowDuplicateItems = rawAllowDuplicateItems?.toString()?.removeSurrounding("\"")?.toBooleanStrictOrNull() ?: rawConfig.allowDuplicateItems
@@ -297,10 +363,14 @@ object ConfigManager {
                     rankTitles = fixedRankTitles,
                     rankRewards = fixedRankRewards,
                     allowedFormats = fixedAllowedFormats,
-                    bannedCarriedItems = fixedBannedCarriedItems,
-                    bannedHeldItems = fixedBannedHeldItems,
-                    bannedPokemon = fixedBannedPokemon,
-                    restrictedPokemon = fixedRestrictedPokemon,
+                    singlesBannedCarriedItems = fixedSinglesBannedCarriedItems,
+                    singlesBannedHeldItems = fixedSinglesBannedHeldItems,
+                    singlesBannedPokemon = fixedSinglesBannedPokemon,
+                    singlesRestrictedPokemon = fixedSinglesRestrictedPokemon,
+                    doublesBannedCarriedItems = fixedDoublesBannedCarriedItems,
+                    doublesBannedHeldItems = fixedDoublesBannedHeldItems,
+                    doublesBannedPokemon = fixedDoublesBannedPokemon,
+                    doublesRestrictedPokemon = fixedDoublesRestrictedPokemon,
                     maxQueueTime = fixedMaxQueueTime,
                     allowDuplicateItems = fixedAllowDuplicateItems,
                     enableTeamPreview = fixedEnableTeamPreview,
@@ -318,22 +388,32 @@ object ConfigManager {
                     initialElo = fixedInitialElo,
                     eloKFactor = fixedEloKFactor,
                     minElo = fixedMinElo,
-                    restrictedCount = fixedRestrictedCount,
+                    singlesRestrictedCount = fixedSinglesRestrictedCount,
+                    doublesRestrictedCount = fixedDoublesRestrictedCount,
                     loserProtectionRate = fixedLoserProtectionRate,
                     allowDuplicateSpecies = fixedAllowDuplicateSpecies,
                     maxLevel = fixedMaxLevel,
                     customBattleLevel = fixedCustomBattleLevel,
                     enableCustomLevel = fixedEnableCustomLevel,
-                    banUsageBelow = fixedBanUsageBelow,
-                    banUsageAbove = fixedBanUsageAbove,
-                    banTopUsed = fixedBanTopUsed,
-                    onlyBaseFormWithEvolution = fixedOnlyBaseFormWithEvolution,
+                    singlesBanUsageBelow = fixedSinglesBanUsageBelow,
+                    singlesBanUsageAbove = fixedSinglesBanUsageAbove,
+                    singlesBanTopUsed = fixedSinglesBanTopUsed,
+                    singlesOnlyBaseFormWithEvolution = fixedSinglesOnlyBaseFormWithEvolution,
+                    doublesBanUsageBelow = fixedDoublesBanUsageBelow,
+                    doublesBanUsageAbove = fixedDoublesBanUsageAbove,
+                    doublesBanTopUsed = fixedDoublesBanTopUsed,
+                    doublesOnlyBaseFormWithEvolution = fixedDoublesOnlyBaseFormWithEvolution,
                     rankRequirements = fixedRankRequirements,
-                    bannedMoves = fixedBannedMoves,
-                    bannedNatures = fixedBannedNatures,
-                    bannedAbilities = fixedBannedAbilities,
-                    bannedGenders = fixedBannedGenders,
-                    bannedShiny = fixedBannedShiny,
+                    singlesBannedMoves = fixedSinglesBannedMoves,
+                    singlesBannedNatures = fixedSinglesBannedNatures,
+                    singlesBannedAbilities = fixedSinglesBannedAbilities,
+                    singlesBannedGenders = fixedSinglesBannedGenders,
+                    singlesBannedShiny = fixedSinglesBannedShiny,
+                    doublesBannedMoves = fixedDoublesBannedMoves,
+                    doublesBannedNatures = fixedDoublesBannedNatures,
+                    doublesBannedAbilities = fixedDoublesBannedAbilities,
+                    doublesBannedGenders = fixedDoublesBannedGenders,
+                    doublesBannedShiny = fixedDoublesBannedShiny,
                     enableCrossServer = fixedEnableCrossServer,
                     cloudServerId = fixedCloudServerId,
                     cloudToken = fixedcloudToken,
