@@ -209,7 +209,7 @@ object TeamSelectionManager {
                 RankUtils.sendMessage(player, MessageConfig.get("queue.selection_invalid", lang))
             }
 
-            if (!validateSubmission(player, selectedUuids, session.limit)) {
+            if (!validateSubmission(player, selectedUuids, session.limit, session.format)) {
                 sendError()
                 return
             }
@@ -244,7 +244,7 @@ object TeamSelectionManager {
         }
     }
 
-    private fun validateSubmission(player: ServerPlayerEntity, selected: List<UUID>, limit: Int): Boolean {
+    private fun validateSubmission(player: ServerPlayerEntity, selected: List<UUID>, limit: Int, format: BattleFormat): Boolean {
         if (selected.size != limit) return false
         val party = Cobblemon.storage.getParty(player)
 
@@ -253,7 +253,7 @@ object TeamSelectionManager {
         }
         if (!allInParty) return false
 
-        return BattleHandler.validateTeam(player, selected, BattleFormat.GEN_9_SINGLES)
+        return BattleHandler.validateTeam(player, selected, format)
     }
 
     private fun handleTimeout(session: SelectionSession, p1Full: List<UUID>, p2Full: List<UUID>) {
